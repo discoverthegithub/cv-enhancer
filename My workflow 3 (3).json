@@ -1,0 +1,576 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-enhancer",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        64
+      ],
+      "id": "0203b81b-243f-4608-8932-b8c1c9130b71",
+      "name": "Webhook",
+      "webhookId": "67d0478f-4c6a-492b-8c5e-cb280edd7739"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        160,
+        320
+      ],
+      "id": "24c0abbb-7384-4992-abcb-c388d9db2342",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FpaItnJ9KcrtUQMx",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert resume/CV enhancer with deep knowledge of professional writing and ATS (Applicant Tracking System) optimization. \n\nPlease enhance the following resume by:\n\n1. **Professional Language Enhancement:**\n   - Improve professional terminology and industry-specific language\n   - Replace weak verbs with strong action verbs\n   - Ensure consistent tense and professional tone\n\n2. **ATS Optimization:**\n   - Add relevant keywords for the industry/role\n   - Ensure proper keyword placement and density\n   - Optimize for automated screening systems\n\n3. **Content Improvement:**\n   - Make bullet points more impactful and achievement-focused\n   - Quantify achievements where possible (numbers, percentages, metrics)\n   - Improve clarity and conciseness\n\n4. **Structure and Format:**\n   - Maintain clear section headers\n   - Ensure logical flow and organization\n   - Keep consistent formatting\n\n5. **Professional Standards:**\n   - Remove any unprofessional content\n   - Ensure proper grammar and spelling\n   - Maintain professional length (1-2 pages)\n\nResume text to enhance:\n{{ $json.text }}\n\nPlease return the enhanced resume in a clean, professional format that maintains the original structure while significantly improving the content quality. Focus on making it more compelling and ATS-friendly.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        128
+      ],
+      "id": "281c03bf-7ce4-474d-b409-08ca3d31a82c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Working PDF Generation Code for N8N - No TypeScript Errors\n\n// Get enhanced text from AI agent\nconst enhancedText = $input.first().json.enhancedText || $input.first().json.text || 'No enhanced text available';\nconst originalFileName = $input.first().json.originalFileName || 'Resume';\nconst PDFDocument = require('pdfkit');\n// Create PDF document\nconst doc = new PDFDocument({\n  size: 'A4',\n  margins: {\n    top: 40,\n    bottom: 40,\n    left: 40,\n    right: 40\n  }\n});\n\n// Set up basic styling\ndoc.font('Helvetica');\ndoc.fontSize(11);\n\n// Add content to PDF\ndoc.text(enhancedText, {\n  align: 'left',\n  lineGap: 3\n});\n\n// Generate PDF buffer - Simple approach\nconst chunks = [];\ndoc.on('data', function(chunk) {\n  chunks.push(chunk);\n});\n\ndoc.on('end', function() {\n  // Create buffer from chunks\n  let pdfBuffer;\n  try {\n    pdfBuffer = Buffer.concat(chunks);\n  } catch (e) {\n    // Fallback if Buffer.concat fails\n    pdfBuffer = Buffer.from(chunks.join(''));\n  }\n  \n  // Return result\n  return {\n    json: {\n      pdfContent: pdfBuffer,\n      fileName: `Enhanced_${originalFileName.replace(/\\.[^/.]+$/, '')}.pdf`,\n      originalFileName: originalFileName,\n      enhancedText: enhancedText\n    }\n  };\n});\n\n// End the document\ndoc.end();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        160
+      ],
+      "id": "720502b0-f38e-47bb-b3a1-8f497c9f8c04",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/pdf"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "=attachment; filename=\"{{ $json.fileName }}\" "
+              }
+            ]
+          },
+          "responseKey": "={{ $json.pdfContent }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        928,
+        176
+      ],
+      "id": "6f6a243f-a2b6-440b-844a-011e44ad3bc3",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "882921d8-fa13-4e69-9f5f-bbb05a56b001",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        64
+      ],
+      "id": "7d34c249-1d15-407f-9c7c-e810f17bda13",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1d6fb65a-3554-4726-9457-fb3503a05c70",
+              "leftValue": "={{ $json.enhancedText }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        -160
+      ],
+      "id": "7af9d6c9-2135-423a-a218-b2d35ff117f9",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "responseKey": "   \"error\": \"Text extraction failed\", \"message\": \"Could not extract text from the uploaded PDF. Please ensure the file is a valid PDF document.\", \"status\": \"error\" }"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        176,
+        -208
+      ],
+      "id": "3ba74548-e4be-4d0b-a258-bf7c5ebe76e8",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        64
+      ],
+      "id": "21bea6fd-8c90-443b-aa61-4f5c381e19f0",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "auth",
+              "value": "sk_b6a95ce5889d30b99d26ff269805758d518cfbe5"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/Json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $node[\"If1\"].json.output }}"
+            },
+            {
+              "name": "auth",
+              "value": " sk_b6a95ce5889d30b99d26ff269805758d518cfbe5"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -96
+      ],
+      "id": "4b7308c4-6cce-4464-bb75-ae044bd5cd3b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/pdf"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "=attachment; filename=\"{{ $json.fileName }}\" "
+              }
+            ]
+          },
+          "responseKey": "={{ $json.pdfContent }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1184,
+        32
+      ],
+      "id": "988f397e-bf56-4919-aa1f-dd85c79516db",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "{{ $node[\"Code3\"].json.html }}",
+        "advancedOptions": {
+          "header": "<h1 style=\"text-align: center; color: #333;\">RESUME</h1>\n<hr>"
+        }
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -272
+      ],
+      "id": "7a6fddff-178e-460c-b5b3-69a98a2fe393",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "T0SLyQ5kINmvIVKd",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const enhancedText = $input.first().json.enhancedText || \"Default text if empty\";\nreturn {\n  json: {\n    tempFileUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(enhancedText)}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -624
+      ],
+      "id": "94c238d7-9c7d-431a-b7c7-c39dc00b051f",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseKey": "={\n  \"status\": \"{{ $node[\"PDFco Api\"].json.url }}\",\n  \"success\": true,\n  \"credits\": \"{{ $node[\"PDFco Api\"].json.credits }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1696,
+        -288
+      ],
+      "id": "fbae0b3a-0b50-44e5-a5a1-3fa8757f9ef0",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    html: `\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <style>\n          body { font-family: Arial; margin: 20px; }\n        </style>\n      </head>\n      <body>\n        ${$input.all()[0].json.enhancedText || \"Default resume text\"}\n      </body>\n      </html>\n    `\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -256
+      ],
+      "id": "5ac1be08-5728-4764-b62d-e2a550b89691",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "operation": "Create PDF/A",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdf4me.pdf4me",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        336
+      ],
+      "id": "af1dc41a-1989-4889-9058-63efcf64cd7c",
+      "name": "PDF4ME",
+      "credentials": {
+        "pdf4meApi": {
+          "id": "SAdouD82uDrulgwN",
+          "name": "PDF4ME account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert GPT text to binary buffer\nconst text = $input.json.enhancedText || \"Default text\";\nreturn {\n  pdfBuffer: Buffer.from(text, 'utf-8'),\n  fileName: \"resume.txt\" // Temporary filename\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        336
+      ],
+      "id": "663ea02a-f81b-4306-bf3f-2fbb74cf0479",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    structured_output: {\n      content: $input.all()[0].json.output, // Correct way to access first item's JSON\n      metadata: {\n        language: \"en\",\n        type: \"resume\"\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -416
+      ],
+      "id": "12b0d98a-1a03-4e3b-8553-f588703706e5",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// For ALL input items (array)\nreturn $input.all().map(item => ({\n  json: {\n    enhancedText: item.json  // Converts each raw text item to JSON\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -304
+      ],
+      "id": "6e3f0505-1046-449e-acc1-e53f57e60cf0",
+      "name": "Code5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF4ME": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        []
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3443387e-be7f-4e50-9acc-b421e6fbc656",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7197b03521afa53c2086d6a065d30ea9d52f4ec1d74b06cfeddfb1a14d8c3767"
+  },
+  "id": "AdguFkRweN3EElOJ",
+  "tags": []
+}
